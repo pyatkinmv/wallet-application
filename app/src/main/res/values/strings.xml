@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Wallet Application</string>
+    <string name="loading">Loading...</string>
+    <string name="loaded">Ready</string>
 </resources>

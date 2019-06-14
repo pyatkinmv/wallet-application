@@ -2,4 +2,6 @@
     <string name="app_name">Wallet Application</string>
     <string name="loading">Loading...</string>
     <string name="loaded">Ready</string>
+    <string name="addr_gen_activity">Go to Address Generator View</string>
+    <string name="gen_new_addr">Generate new address</string>
 </resources>

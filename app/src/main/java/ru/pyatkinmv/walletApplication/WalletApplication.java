@@ -8,7 +8,6 @@ public class WalletApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-
         WalletManager.init(this);
     }
 

@@ -3,20 +3,24 @@ package ru.pyatkinmv.walletApplication;
 import android.content.Context;
 import android.util.Log;
 
+import org.bitcoinj.core.Address;
+import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.kits.WalletAppKit;
 import org.bitcoinj.params.RegTestParams;
 import org.bitcoinj.params.TestNet3Params;
+import org.bitcoinj.wallet.Wallet;
 
 import java.io.File;
 
 public class WalletManager {
     private final static String TAG = "WalletManager";
 
-    private static WalletManager INSTANCE;
-
+    private Wallet wallet;
     private boolean isReady;
+
+    private static WalletManager INSTANCE;
 
     public static WalletManager getInstance() {
         return INSTANCE;
@@ -41,9 +45,11 @@ public class WalletManager {
                 if (wallet().getKeyChainGroupSize() < 1)
                     wallet().importKey(new ECKey());
 
+                wallet = wallet();
                 isReady = true;
 
                 Log.d(TAG, "WALLET KIT IS INITED");
+                Log.d(TAG, wallet().getBalance().toFriendlyString());
             }
         };
 
@@ -51,16 +57,22 @@ public class WalletManager {
             kit.connectToLocalHost();
         }
 
-        // запускается инициализация кита в параллельном потоке, не блокируя главный тред;
         kit.startAsync();
-
-        // блокирует текущий поток и дожидадается завершения инициализации кита
-//        kit.awaitRunning();
-
-        Log.d(TAG, "AFTER kit.startAsync()");
     }
 
     public boolean isReady() {
         return isReady;
+    }
+
+    public Wallet getWallet() {
+        return wallet;
+    }
+
+    public Coin getBalance() {
+        return getWallet().getBalance();
+    }
+
+    public Address generateAddress() {
+        return wallet.freshReceiveAddress();
     }
 }

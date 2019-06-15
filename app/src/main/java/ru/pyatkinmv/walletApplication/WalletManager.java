@@ -7,18 +7,22 @@ import org.bitcoinj.core.Address;
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.NetworkParameters;
+import org.bitcoinj.core.listeners.DownloadProgressTracker;
 import org.bitcoinj.kits.WalletAppKit;
-import org.bitcoinj.params.RegTestParams;
 import org.bitcoinj.params.TestNet3Params;
 import org.bitcoinj.wallet.Wallet;
 
 import java.io.File;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 public class WalletManager {
     private final static String TAG = "WalletManager";
 
+    private Set<ProgressUpdater> listeners;
+
     private Wallet wallet;
-    private boolean isReady;
 
     private static WalletManager INSTANCE;
 
@@ -33,10 +37,11 @@ public class WalletManager {
     private WalletManager(Context context) {
         Log.d(TAG, "INIT WALLET KIT");
 
+        listeners = new HashSet<>();
+
         NetworkParameters params = TestNet3Params.get();
 
-        WalletAppKit kit = new WalletAppKit(params, new File(String.valueOf(context.getFilesDir())),
-                "forwarding-service-testnet") {
+        WalletAppKit kit = new WalletAppKit(params, new File(String.valueOf(context.getFilesDir())), "forwarding-service-testnet") {
             @Override
             protected void onSetupCompleted() {
                 // This is called in a background thread after startAndWait is called, as setting up various objects
@@ -46,22 +51,32 @@ public class WalletManager {
                     wallet().importKey(new ECKey());
 
                 wallet = wallet();
-                isReady = true;
 
                 Log.d(TAG, "WALLET KIT IS INITED");
                 Log.d(TAG, wallet().getBalance().toFriendlyString());
             }
         };
 
-        if (params == RegTestParams.get()) {
-            kit.connectToLocalHost();
-        }
+        kit.setDownloadListener(
+                new DownloadProgressTracker() {
+                    @Override
+                    protected void doneDownload() {
+                        super.doneDownload();
+                        for (ProgressUpdater listener : listeners) {
+                            listener.done();
+                        }
+                    }
+
+                    @Override
+                    protected void progress(double pct, int blocksSoFar, Date date) {
+                        super.progress(pct, blocksSoFar, date);
+                        for (ProgressUpdater listener : listeners) {
+                            listener.update(pct, blocksSoFar, date);
+                        }
+                    }
+                }).setBlockingStartup(false);
 
         kit.startAsync();
-    }
-
-    public boolean isReady() {
-        return isReady;
     }
 
     public Wallet getWallet() {
@@ -74,5 +89,13 @@ public class WalletManager {
 
     public Address generateAddress() {
         return wallet.freshReceiveAddress();
+    }
+
+    public void register(ProgressUpdater listener) {
+        listeners.add(listener);
+    }
+
+    public void remove(ProgressUpdater listener) {
+        listeners.remove(listener);
     }
 }

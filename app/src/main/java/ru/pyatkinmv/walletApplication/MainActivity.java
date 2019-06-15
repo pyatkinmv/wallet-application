@@ -14,7 +14,8 @@ import java.util.Date;
 public class MainActivity extends AppCompatActivity {
     private final static String TAG = "Main Activity";
     private final static int BALANCE_DELAY = 100;
-    private ProgressUpdater listener;
+
+    private ProgressUpdater updater;
 
     private int progress;
     private Handler handler;
@@ -29,45 +30,43 @@ public class MainActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
         textView = findViewById(R.id.text);
 
-        listener = new ProgressUpdater() {
-            public void done() {
+        updater = new ProgressUpdater() {
+            public void onFinish() {
                 doneDownload();
                 startBalanceActivity();
             }
 
-            public void update(double pct, int blocksSoFar, Date date) {
+            public void postProgress(double pct, int blocksSoFar, Date date) {
                 progress(pct, blocksSoFar, date);
-
-                postProgress((int) pct);
-                Log.d(TAG, pct + " PERCENT");
+                updateProgress((int) pct);
             }
-
         };
 
-        WalletManager.getInstance().register(listener);
+        WalletManager.getInstance().register(updater);
 
         handler = new Handler(getMainLooper());
 
-        postProgress(progress);
-    }
-
-    public void postProgress(int newProgress) {
-        this.progress = newProgress;
-
-        textView.setText(progress + "%");
-
-        progressBar.setProgress(progress);
-        progressBar.setSecondaryProgress(progress + 5);
-
-    }
-
-    public void startBalanceActivity() {
-        handler.postDelayed(() -> startActivity(new Intent(this, BalanceActivity.class)), BALANCE_DELAY);
+        updateProgress(progress);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        WalletManager.getInstance().remove(listener);
+        WalletManager.getInstance().remove(updater);
+    }
+
+    public void updateProgress(int newProgress) {
+        this.progress = newProgress;
+        String strProgress = progress + "%";
+
+        textView.setText(strProgress);
+        progressBar.setProgress(progress);
+        progressBar.setSecondaryProgress(progress + 5);
+
+        Log.d(TAG, R.string.downloaded + strProgress);
+    }
+
+    public void startBalanceActivity() {
+        handler.postDelayed(() -> startActivity(new Intent(this, BalanceActivity.class)), BALANCE_DELAY);
     }
 }

@@ -6,7 +6,7 @@ import java.util.Date;
 
 public abstract class ProgressUpdater extends DownloadProgressTracker {
 
-    public abstract void done();
+    public abstract void onFinish();
 
-    public abstract void update(double pct, int blocksSoFar, Date date);
+    public abstract void postProgress(double pct, int blocksSoFar, Date date);
 }

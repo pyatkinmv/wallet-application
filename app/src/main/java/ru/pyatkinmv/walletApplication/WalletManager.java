@@ -20,7 +20,7 @@ import java.util.Set;
 public class WalletManager {
     private final static String TAG = "WalletManager";
 
-    private Set<ProgressUpdater> listeners;
+    private Set<ProgressUpdater> updaters;
 
     private Wallet wallet;
 
@@ -37,44 +37,39 @@ public class WalletManager {
     private WalletManager(Context context) {
         Log.d(TAG, "INIT WALLET KIT");
 
-        listeners = new HashSet<>();
+        updaters = new HashSet<>();
 
         NetworkParameters params = TestNet3Params.get();
 
         WalletAppKit kit = new WalletAppKit(params, new File(String.valueOf(context.getFilesDir())), "forwarding-service-testnet") {
             @Override
             protected void onSetupCompleted() {
-                // This is called in a background thread after startAndWait is called, as setting up various objects
-                // can do disk and network IO that may cause UI jank/stuttering in wallet apps if it were to be done
-                // on the main thread.
                 if (wallet().getKeyChainGroupSize() < 1)
                     wallet().importKey(new ECKey());
 
                 wallet = wallet();
 
                 Log.d(TAG, "WALLET KIT IS INITED");
-                Log.d(TAG, wallet().getBalance().toFriendlyString());
             }
         };
 
-        kit.setDownloadListener(
-                new DownloadProgressTracker() {
-                    @Override
-                    protected void doneDownload() {
-                        super.doneDownload();
-                        for (ProgressUpdater listener : listeners) {
-                            listener.done();
-                        }
-                    }
+        kit.setDownloadListener(new DownloadProgressTracker() {
+            @Override
+            protected void doneDownload() {
+                super.doneDownload();
+                for (ProgressUpdater updater : updaters) {
+                    updater.onFinish();
+                }
+            }
 
-                    @Override
-                    protected void progress(double pct, int blocksSoFar, Date date) {
-                        super.progress(pct, blocksSoFar, date);
-                        for (ProgressUpdater listener : listeners) {
-                            listener.update(pct, blocksSoFar, date);
-                        }
-                    }
-                }).setBlockingStartup(false);
+            @Override
+            protected void progress(double pct, int blocksSoFar, Date date) {
+                super.progress(pct, blocksSoFar, date);
+                for (ProgressUpdater updater : updaters) {
+                    updater.postProgress(pct, blocksSoFar, date);
+                }
+            }
+        }).setBlockingStartup(false);
 
         kit.startAsync();
     }
@@ -92,10 +87,10 @@ public class WalletManager {
     }
 
     public void register(ProgressUpdater listener) {
-        listeners.add(listener);
+        updaters.add(listener);
     }
 
     public void remove(ProgressUpdater listener) {
-        listeners.remove(listener);
+        updaters.remove(listener);
     }
 }

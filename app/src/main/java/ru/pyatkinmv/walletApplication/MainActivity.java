@@ -55,10 +55,11 @@ public class MainActivity extends AppCompatActivity {
         WalletManager.getInstance().remove(updater);
     }
 
-    public void updateProgress(int newProgress) {
+    private void updateProgress(int newProgress) {
         this.progress = newProgress;
 
-        StringBuilder strProgress = new StringBuilder(progress);
+        StringBuilder strProgress = new StringBuilder();
+        strProgress.append(progress);
         strProgress.append("%");
 
         textView.setText(strProgress);
@@ -69,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, downloaded.toString());
     }
 
-    public void startBalanceActivity() {
+    private void startBalanceActivity() {
         handler.postDelayed(() -> startActivity(new Intent(this, BalanceActivity.class)), BALANCE_DELAY);
     }
 }

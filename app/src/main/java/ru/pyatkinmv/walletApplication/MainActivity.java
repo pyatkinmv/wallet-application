@@ -57,13 +57,16 @@ public class MainActivity extends AppCompatActivity {
 
     public void updateProgress(int newProgress) {
         this.progress = newProgress;
-        String strProgress = progress + "%";
+
+        StringBuilder strProgress = new StringBuilder(progress);
+        strProgress.append("%");
 
         textView.setText(strProgress);
         progressBar.setProgress(progress);
         progressBar.setSecondaryProgress(progress + 5);
 
-        Log.d(TAG, R.string.downloaded + strProgress);
+        StringBuilder downloaded = strProgress.append(getResources().getString(R.string.downloaded));
+        Log.d(TAG, downloaded.toString());
     }
 
     public void startBalanceActivity() {
